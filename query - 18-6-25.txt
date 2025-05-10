@@ -1,0 +1,169 @@
+
+CREATE DATABASE IF NOT EXISTS airline_exam_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE airline_exam_db;
+
+
+DROP TABLE IF EXISTS `passengers`;
+DROP TABLE IF EXISTS `bookings`;
+DROP TABLE IF EXISTS `flights`;
+DROP TABLE IF EXISTS `users`;
+DROP TABLE IF EXISTS `airlines`;
+DROP TABLE IF EXISTS `airports`;
+
+
+
+CREATE TABLE `airports` (
+  `code` VARCHAR(3) PRIMARY KEY, 
+  `name` VARCHAR(100) NOT NULL,
+  `city` VARCHAR(100) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE `airlines` (
+  `code` VARCHAR(2) PRIMARY KEY, 
+  `name` VARCHAR(100) NOT NULL,
+  `logo` VARCHAR(50) NULL 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `users` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(100) UNIQUE NOT NULL,
+  `password` VARCHAR(255) NOT NULL, 
+  `full_name` VARCHAR(100) NOT NULL,
+  `role` ENUM('customer', 'admin') NOT NULL DEFAULT 'customer',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE `flights` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `flight_number` VARCHAR(10) NOT NULL,
+  `airline_code` VARCHAR(2) NOT NULL,
+  `origin_code` VARCHAR(3) NOT NULL,
+  `destination_code` VARCHAR(3) NOT NULL,
+  `departure_time` DATETIME NOT NULL,
+  `arrival_time` DATETIME NOT NULL,
+  `price` DECIMAL(10, 2) NOT NULL, 
+  `seats_available` INT NOT NULL DEFAULT 50,
+  FOREIGN KEY (`airline_code`) REFERENCES `airlines`(`code`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`origin_code`) REFERENCES `airports`(`code`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`destination_code`) REFERENCES `airports`(`code`) ON DELETE CASCADE ON UPDATE CASCADE,
+  INDEX idx_search (`origin_code`, `destination_code`, `departure_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `bookings` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `booking_ref` VARCHAR(8) UNIQUE NOT NULL, 
+  `user_id` INT NOT NULL,
+  `flight_id` INT NOT NULL,
+  `num_passengers` INT NOT NULL,
+  `total_price` DECIMAL(10, 2) NOT NULL,
+  `booking_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `status` ENUM('Confirmed', 'Cancelled') NOT NULL DEFAULT 'Confirmed',
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`flight_id`) REFERENCES `flights`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE `passengers` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `booking_id` INT NOT NULL,
+  `full_name` VARCHAR(100) NOT NULL,
+  `dob` DATE NULL, -- Date of Birth (optional for demo)
+  FOREIGN KEY (`booking_id`) REFERENCES `bookings`(`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+INSERT INTO `airports` (`code`, `name`, `city`) VALUES
+('DEL', 'Indira Gandhi International', 'Delhi'),
+('BOM', 'Chhatrapati Shivaji Maharaj Intl', 'Mumbai'),
+('BLR', 'Kempegowda International', 'Bengaluru'),
+('MAA', 'Chennai International', 'Chennai'),
+('HYD', 'Rajiv Gandhi International', 'Hyderabad'),
+('CCU', 'Netaji Subhas Chandra Bose Intl', 'Kolkata'),
+('AMD', 'Sardar Vallabhbhai Patel Intl', 'Ahmedabad'),
+('PNQ', 'Pune Airport', 'Pune'),
+('GOI', 'Dabolim Airport', 'Goa'),
+('COK', 'Cochin International', 'Kochi'),
+('JAI', 'Jaipur International', 'Jaipur'),
+('CJB', 'Coimbatore International Airport', 'Coimbatore'); -- Added Coimbatore
+
+-- Sample Indian Airlines
+INSERT INTO `airlines` (`code`, `name`, `logo`) VALUES
+('6E', 'IndiGo', '6e.png'),
+('AI', 'Air India', 'ai.png'),
+('UK', 'Vistara', 'uk.png'),
+('SG', 'SpiceJet', 'sg.png'),
+('I5', 'AIX Connect', 'i5.png'), -- Formerly AirAsia India
+('QP', 'Akasa Air', 'qp.png');
+
+
+INSERT INTO `users` (`email`, `password`, `full_name`, `role`) VALUES
+('admin@example.com', '$2y$10$REPLACE_THIS_WITH_YOUR_GENERATED_HASH', 'Admin User', 'admin');
+
+
+INSERT INTO `flights` (`flight_number`, `airline_code`, `origin_code`, `destination_code`, `departure_time`, `arrival_time`, `price`, `seats_available`) VALUES
+('6E201', '6E', 'DEL', 'BOM', '2025-06-18 06:00:00', '2025-06-18 08:05:00', 4750.00, 48),
+('UK995', 'UK', 'DEL', 'BOM', '2025-06-18 07:30:00', '2025-06-18 09:35:00', 5100.00, 42),
+('AI887', 'AI', 'DEL', 'BOM', '2025-06-18 09:00:00', '2025-06-18 11:00:00', 5350.00, 55),
+('SG160', 'SG', 'DEL', 'BOM', '2025-06-18 10:15:00', '2025-06-18 12:20:00', 4600.00, 38),
+('6E203', '6E', 'DEL', 'BOM', '2025-06-18 11:45:00', '2025-06-18 13:50:00', 4800.00, 51),
+('QP1105', 'QP', 'DEL', 'BOM', '2025-06-18 14:00:00', '2025-06-18 16:05:00', 4550.00, 40),
+('I5751', 'I5', 'DEL', 'BOM', '2025-06-18 15:30:00', '2025-06-18 17:35:00', 4400.00, 45),
+('6E205', '6E', 'DEL', 'BOM', '2025-06-18 17:00:00', '2025-06-18 19:00:00', 4950.00, 49),
+('AI805', 'AI', 'DEL', 'BOM', '2025-06-18 18:30:00', '2025-06-18 20:35:00', 5400.00, 50),
+('UK941', 'UK', 'DEL', 'BOM', '2025-06-18 20:00:00', '2025-06-18 22:05:00', 5250.00, 35),
+('6E207', '6E', 'DEL', 'BOM', '2025-06-18 21:30:00', '2025-06-18 23:30:00', 4900.00, 44);
+
+INSERT INTO `flights` (`flight_number`, `airline_code`, `origin_code`, `destination_code`, `departure_time`, `arrival_time`, `price`, `seats_available`) VALUES
+('UK851', 'UK', 'BOM', 'BLR', '2025-06-18 07:00:00', '2025-06-18 08:35:00', 4900.00, 39),
+('6E601', '6E', 'BOM', 'BLR', '2025-06-18 08:15:00', '2025-06-18 09:50:00', 4650.00, 52),
+('QP1121', 'QP', 'BOM', 'BLR', '2025-06-18 10:00:00', '2025-06-18 11:30:00', 4500.00, 46),
+('AI585', 'AI', 'BOM', 'BLR', '2025-06-18 12:30:00', '2025-06-18 14:00:00', 5100.00, 50),
+('SG331', 'SG', 'BOM', 'BLR', '2025-06-18 15:00:00', '2025-06-18 16:35:00', 4450.00, 36),
+('6E603', '6E', 'BOM', 'BLR', '2025-06-18 16:45:00', '2025-06-18 18:15:00', 4700.00, 50),
+('I5991', 'I5', 'BOM', 'BLR', '2025-06-18 18:00:00', '2025-06-18 19:30:00', 4350.00, 41),
+('UK863', 'UK', 'BOM', 'BLR', '2025-06-18 19:30:00', '2025-06-18 21:00:00', 5000.00, 33),
+('6E605', '6E', 'BOM', 'BLR', '2025-06-18 21:00:00', '2025-06-18 22:35:00', 4800.00, 47);
+
+
+INSERT INTO `flights` (`flight_number`, `airline_code`, `origin_code`, `destination_code`, `departure_time`, `arrival_time`, `price`, `seats_available`) VALUES
+('6E2101', '6E', 'DEL', 'BLR', '2025-06-18 05:30:00', '2025-06-18 08:15:00', 5800.00, 53),
+('AI502', 'AI', 'DEL', 'BLR', '2025-06-18 07:00:00', '2025-06-18 09:45:00', 6400.00, 50),
+('UK817', 'UK', 'DEL', 'BLR', '2025-06-18 09:15:00', '2025-06-18 12:00:00', 6250.00, 41),
+('SG805', 'SG', 'DEL', 'BLR', '2025-06-18 11:00:00', '2025-06-18 13:45:00', 5650.00, 37),
+('6E2103', '6E', 'DEL', 'BLR', '2025-06-18 13:30:00', '2025-06-18 16:15:00', 5900.00, 51),
+('QP1303', 'QP', 'DEL', 'BLR', '2025-06-18 15:45:00', '2025-06-18 18:30:00', 5500.00, 45),
+('I5771', 'I5', 'DEL', 'BLR', '2025-06-18 18:00:00', '2025-06-18 20:45:00', 5450.00, 43),
+('AI506', 'AI', 'DEL', 'BLR', '2025-06-18 19:30:00', '2025-06-18 22:15:00', 6500.00, 49),
+('6E2105', '6E', 'DEL', 'BLR', '2025-06-18 21:00:00', '2025-06-18 23:45:00', 6000.00, 47);
+
+-- *** Routes Involving Coimbatore (CJB) on 2025-06-18 ***
+INSERT INTO `flights` (`flight_number`, `airline_code`, `origin_code`, `destination_code`, `departure_time`, `arrival_time`, `price`, `seats_available`) VALUES
+('6E301', '6E', 'MAA', 'CJB', '2025-06-18 07:00:00', '2025-06-18 08:00:00', 3100.00, 40),
+('SG3002', 'SG', 'BLR', 'CJB', '2025-06-18 08:30:00', '2025-06-18 09:25:00', 3450.00, 35),
+('I51221', 'I5', 'HYD', 'CJB', '2025-06-18 10:15:00', '2025-06-18 11:45:00', 3900.00, 42),
+('6E303', '6E', 'MAA', 'CJB', '2025-06-18 11:00:00', '2025-06-18 12:00:00', 3250.00, 48),
+('AI539', 'AI', 'BOM', 'CJB', '2025-06-18 13:00:00', '2025-06-18 14:45:00', 5500.00, 50),
+('6E305', '6E', 'BLR', 'CJB', '2025-06-18 15:30:00', '2025-06-18 16:25:00', 3550.00, 44),
+('SG3006', 'SG', 'CJB', 'MAA', '2025-06-18 17:00:00', '2025-06-18 18:00:00', 3300.00, 32),
+('6E307', '6E', 'CJB', 'HYD', '2025-06-18 19:00:00', '2025-06-18 20:30:00', 4100.00, 46),
+('UK833', 'UK', 'DEL', 'CJB', '2025-06-18 20:00:00', '2025-06-18 23:00:00', 7200.00, 39);
+
+
+INSERT INTO `flights` (`flight_number`, `airline_code`, `origin_code`, `destination_code`, `departure_time`, `arrival_time`, `price`, `seats_available`) VALUES
+('6E781', '6E', 'DEL', 'PNQ', '2025-06-18 06:30:00', '2025-06-18 08:20:00', 4200.00, 40),
+('AI451', 'AI', 'BOM', 'GOI', '2025-06-18 10:00:00', '2025-06-18 11:10:00', 3500.00, 50),
+('UK899', 'UK', 'BLR', 'HYD', '2025-06-18 14:00:00', '2025-06-18 15:30.00', 3800.00, 38),
+('6E333', '6E', 'MAA', 'CCU', '2025-06-18 17:30:00', '2025-06-18 19:45:00', 5100.00, 45),
+('SG512', 'SG', 'AMD', 'JAI', '2025-06-18 19:00:00', '2025-06-18 20:15:00', 2900.00, 33),
+('QP1401', 'QP', 'CCU', 'GAU', '2025-06-18 09:00:00', '2025-06-18 10:10:00', 3600.00, 30),
+('I5678', 'I5', 'PNQ', 'DEL', '2025-06-18 20:30:00', '2025-06-18 22:30:00', 4400.00, 41);
+
+INSERT INTO `flights` (`flight_number`, `airline_code`, `origin_code`, `destination_code`, `departure_time`, `arrival_time`, `price`, `seats_available`) VALUES
+('SG456', 'SG', 'HYD', 'CCU', '2025-06-18 14:00:00', '2025-06-18 16:15:00', 4350.00, 35),
+('QP1102', 'QP', 'BLR', 'AMD', '2025-06-18 10:00:00', '2025-06-18 12:00:00', 3950.00, 48),
+('6E556', '6E', 'MAA', 'HYD', '2025-06-18 19:00:00', '2025-06-18 20:10:00', 3200.00, 55),
+('I5763', 'I5', 'CCU', 'DEL', '2025-06-18 17:00:00', '2025-06-18 19:30:00', 5550.00, 42),
+('AI101', 'AI', 'DEL', 'LHR', '2025-06-18 13:00:00', '2025-06-18 22:30:00', 45000.00, 30);
+
